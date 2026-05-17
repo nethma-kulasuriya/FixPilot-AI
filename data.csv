@@ -1,0 +1,6 @@
+issue,category,priority
+"app crashes on login",Bug,High
+"ui alignment issue on homepage",UI,Low
+"database connection fails",Backend,High
+"slow loading dashboard",Performance,Medium
+"button not working in mobile",Bug,High
