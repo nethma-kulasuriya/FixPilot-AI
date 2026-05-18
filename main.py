@@ -6,6 +6,9 @@ import joblib
 from database import engine, SessionLocal
 from models import TicketDB, Base
 
+from auth import hash_password, verify_password, create_token
+from models import UserDB
+
 # 1. Create app FIRST (MOST IMPORTANT)
 app = FastAPI()
 
@@ -34,6 +37,9 @@ class Ticket(BaseModel):
 @app.post("/predict")
 def predict(ticket: Ticket):
 
+    # TEMP: we'll pass user later from frontend token
+    owner = "demo-user"
+
     X = vectorizer.transform([ticket.issue])
 
     category_prediction = category_model.predict(X)[0]
@@ -44,7 +50,8 @@ def predict(ticket: Ticket):
     new_ticket = TicketDB(
         issue=ticket.issue,
         category=category_prediction,
-        priority=priority_prediction
+        priority=priority_prediction,
+        owner=owner
     )
 
     db.add(new_ticket)
@@ -52,17 +59,45 @@ def predict(ticket: Ticket):
     db.refresh(new_ticket)
     db.close()
 
-    return {
-        "id": new_ticket.id,
-        "issue": new_ticket.issue,
-        "category": new_ticket.category,
-        "priority": new_ticket.priority
-    }
+    return new_ticket
 
 # 7. Get all tickets
 @app.get("/tickets")
 def get_tickets():
+
     db = SessionLocal()
-    tickets = db.query(TicketDB).all()
+    tickets = db.query(TicketDB).filter(TicketDB.owner == "demo-user").all()
     db.close()
+
     return tickets
+
+@app.post("/register")
+def register(email: str, password: str):
+
+    db = SessionLocal()
+
+    user = UserDB(
+        email=email,
+        password=hash_password(password)
+    )
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    db.close()
+
+    return {"message": "User created"}
+
+    @app.post("/login")
+def login(email: str, password: str):
+
+    db = SessionLocal()
+    user = db.query(UserDB).filter(UserDB.email == email).first()
+    db.close()
+
+    if not user or not verify_password(password, user.password):
+        return {"error": "Invalid credentials"}
+
+    token = create_token({"email": email})
+
+    return {"access_token": token}
