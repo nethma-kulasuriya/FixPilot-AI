@@ -1,22 +1,22 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import "./App.css";
 
 function App() {
   const [issue, setIssue] = useState("");
   const [result, setResult] = useState(null);
   const [tickets, setTickets] = useState([]);
 
-  // Call AI prediction
   const analyzeIssue = async () => {
     const res = await axios.post("http://127.0.0.1:8000/predict", {
-      issue: issue,
+      issue,
     });
 
     setResult(res.data);
     fetchTickets();
+    setIssue("");
   };
 
-  // Fetch saved tickets
   const fetchTickets = async () => {
     const res = await axios.get("http://127.0.0.1:8000/tickets");
     setTickets(res.data);
@@ -26,41 +26,72 @@ function App() {
     fetchTickets();
   }, []);
 
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case "High":
+        return "#ff4d4d";
+      case "Medium":
+        return "#ffa500";
+      default:
+        return "#4caf50";
+    }
+  };
+
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial" }}>
-      <h1>FixPilot AI Dashboard</h1>
+    <div className="container">
+      <h1 className="title">FixPilot AI Dashboard</h1>
 
-      <textarea
-        rows="4"
-        cols="50"
-        placeholder="Enter issue..."
-        value={issue}
-        onChange={(e) => setIssue(e.target.value)}
-      />
+      <div className="inputCard">
+        <textarea
+          placeholder="Describe your issue..."
+          value={issue}
+          onChange={(e) => setIssue(e.target.value)}
+        />
 
-      <br />
-
-      <button onClick={analyzeIssue}>Analyze</button>
+        <button onClick={analyzeIssue}>Analyze Issue</button>
+      </div>
 
       {result && (
-        <div style={{ marginTop: "20px" }}>
-          <h2>AI Result</h2>
-          <p>Category: {result.category}</p>
-          <p>Priority: {result.priority}</p>
+        <div className="resultCard">
+          <h2>Latest AI Result</h2>
+          <p><b>Category:</b> {result.category}</p>
+          <p>
+            <b>Priority:</b>{" "}
+            <span
+              style={{
+                color: getPriorityColor(result.priority),
+                fontWeight: "bold",
+              }}
+            >
+              {result.priority}
+            </span>
+          </p>
         </div>
       )}
 
-      <hr />
+      <h2 className="sectionTitle">Tickets</h2>
 
-      <h2>Saved Tickets</h2>
-
-      <ul>
+      <div className="grid">
         {tickets.map((t) => (
-          <li key={t.id}>
-            #{t.id} - {t.issue} ({t.category}, {t.priority})
-          </li>
+          <div key={t.id} className="card">
+            <div className="cardHeader">
+              <span className="ticketId">#{t.id}</span>
+              <span
+                className="badge"
+                style={{ background: getPriorityColor(t.priority) }}
+              >
+                {t.priority}
+              </span>
+            </div>
+
+            <p className="issueText">{t.issue}</p>
+
+            <div className="category">
+              {t.category}
+            </div>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
