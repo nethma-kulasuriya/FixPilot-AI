@@ -37,8 +37,7 @@ class Ticket(BaseModel):
 @app.post("/predict")
 def predict(ticket: Ticket):
 
-    # TEMP: we'll pass user later from frontend token
-    owner = "demo-user"
+    owner = "demo-user"  # TEMP (we'll replace later)
 
     X = vectorizer.transform([ticket.issue])
 
@@ -88,7 +87,7 @@ def register(email: str, password: str):
 
     return {"message": "User created"}
 
-    @app.post("/login")
+@app.post("/login")
 def login(email: str, password: str):
 
     db = SessionLocal()
