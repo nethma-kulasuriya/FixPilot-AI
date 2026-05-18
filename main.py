@@ -4,18 +4,25 @@ import joblib
 
 app = FastAPI()
 
-model = joblib.load("model.pkl")
+# Load models
+category_model = joblib.load("category_model.pkl")
+priority_model = joblib.load("priority_model.pkl")
 vectorizer = joblib.load("vectorizer.pkl")
 
+# Request body
 class Ticket(BaseModel):
     issue: str
 
+# Prediction endpoint
 @app.post("/predict")
 def predict(ticket: Ticket):
 
     X = vectorizer.transform([ticket.issue])
-    prediction = model.predict(X)
+
+    category_prediction = category_model.predict(X)
+    priority_prediction = priority_model.predict(X)
 
     return {
-        "category": prediction[0]
+        "category": category_prediction[0],
+        "priority": priority_prediction[0]
     }
