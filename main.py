@@ -52,3 +52,12 @@ def predict(ticket: Ticket):
         "category": new_ticket.category,
         "priority": new_ticket.priority
     }
+
+@app.get("/tickets")
+def get_tickets():
+
+    db = SessionLocal()
+    tickets = db.query(TicketDB).all()
+    db.close()
+
+    return tickets
