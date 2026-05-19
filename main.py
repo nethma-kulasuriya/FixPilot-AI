@@ -1,33 +1,67 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import joblib
 
 from database import engine, SessionLocal
-from models import TicketDB, Base
+from models import TicketDB, Base, UserDB
 
-from auth import hash_password, verify_password, create_token
-from models import UserDB
+from auth import (
+    hash_password,
+    verify_password,
+    create_token,
+    decode_token
+)
 
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer
-from auth import decode_token
 
 
-# 1. Create app FIRST (MOST IMPORTANT)
+# ---------------- APP ----------------
+
 app = FastAPI()
 
 security = HTTPBearer()
 
+
+# ---------------- AUTH HELPERS ----------------
+
 def get_current_user(token=Depends(security)):
+
     data = decode_token(token.credentials)
 
     if not data:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid token"
+        )
 
     return data["email"]
 
-# 2. Add middleware AFTER app is created
+
+def get_admin_user(user=Depends(get_current_user)):
+
+    db = SessionLocal()
+
+    existing_user = db.query(UserDB).filter(
+        UserDB.email == user
+    ).first()
+
+    db.close()
+
+    if not existing_user or not existing_user.is_admin:
+        raise HTTPException(
+            status_code=403,
+            detail="Admin access required"
+        )
+
+    return user
+
+
+# ---------------- CORS ----------------
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -36,19 +70,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 3. Create database tables
+
+# ---------------- DATABASE ----------------
+
 Base.metadata.create_all(bind=engine)
 
-# 4. Load ML models
+
+# ---------------- LOAD AI MODELS ----------------
+
 category_model = joblib.load("category_model.pkl")
 priority_model = joblib.load("priority_model.pkl")
 vectorizer = joblib.load("vectorizer.pkl")
 
-# 5. Request model
+
+# ---------------- REQUEST MODELS ----------------
+
 class Ticket(BaseModel):
     issue: str
 
-# 6. Predict endpoint
+
+# ---------------- AI PREDICT ----------------
+
 @app.post("/predict")
 def predict(ticket: Ticket, user=Depends(get_current_user)):
 
@@ -73,7 +115,9 @@ def predict(ticket: Ticket, user=Depends(get_current_user)):
 
     return new_ticket
 
-# 7. Get all tickets
+
+# ---------------- USER TICKETS ----------------
+
 @app.get("/tickets")
 def get_tickets(user=Depends(get_current_user)):
 
@@ -87,14 +131,26 @@ def get_tickets(user=Depends(get_current_user)):
 
     return tickets
 
+
+# ---------------- REGISTER ----------------
+
 @app.post("/register")
 def register(email: str, password: str):
 
     db = SessionLocal()
 
+    existing_user = db.query(UserDB).filter(
+        UserDB.email == email
+    ).first()
+
+    if existing_user:
+        db.close()
+        return {"error": "User already exists"}
+
     user = UserDB(
         email=email,
-        password=hash_password(password)
+        password=hash_password(password),
+        is_admin=True if email == "admin@gmail.com" else False
     )
 
     db.add(user)
@@ -105,23 +161,32 @@ def register(email: str, password: str):
     return {"message": "User created"}
 
 
+# ---------------- LOGIN ----------------
+
 @app.post("/login")
 def login(email: str, password: str):
 
     db = SessionLocal()
 
-    user = db.query(UserDB).filter(UserDB.email == email).first()
+    user = db.query(UserDB).filter(
+        UserDB.email == email
+    ).first()
 
     db.close()
 
     if not user or not verify_password(password, user.password):
         return {"error": "Invalid credentials"}
 
-    token = create_token({"email": email})
+    token = create_token({
+        "email": email
+    })
 
     return {
         "access_token": token
     }
+
+
+# ---------------- DELETE TICKET ----------------
 
 @app.delete("/ticket/{ticket_id}")
 def delete_ticket(ticket_id: int, user=Depends(get_current_user)):
@@ -143,8 +208,15 @@ def delete_ticket(ticket_id: int, user=Depends(get_current_user)):
 
     return {"message": "Deleted"}
 
+
+# ---------------- UPDATE TICKET ----------------
+
 @app.put("/ticket/{ticket_id}")
-def update_ticket(ticket_id: int, updated_ticket: Ticket, user=Depends(get_current_user)):
+def update_ticket(
+    ticket_id: int,
+    updated_ticket: Ticket,
+    user=Depends(get_current_user)
+):
 
     db = SessionLocal()
 
@@ -157,7 +229,7 @@ def update_ticket(ticket_id: int, updated_ticket: Ticket, user=Depends(get_curre
         db.close()
         return {"error": "Ticket not found"}
 
-    # AI re-predict when issue changes
+    # Re-run AI prediction
     X = vectorizer.transform([updated_ticket.issue])
 
     ticket.issue = updated_ticket.issue
@@ -169,3 +241,31 @@ def update_ticket(ticket_id: int, updated_ticket: Ticket, user=Depends(get_curre
     db.close()
 
     return ticket
+
+
+# ---------------- ADMIN: ALL USERS ----------------
+
+@app.get("/admin/users")
+def get_all_users(admin=Depends(get_admin_user)):
+
+    db = SessionLocal()
+
+    users = db.query(UserDB).all()
+
+    db.close()
+
+    return users
+
+
+# ---------------- ADMIN: ALL TICKETS ----------------
+
+@app.get("/admin/tickets")
+def get_all_tickets(admin=Depends(get_admin_user)):
+
+    db = SessionLocal()
+
+    tickets = db.query(TicketDB).all()
+
+    db.close()
+
+    return tickets

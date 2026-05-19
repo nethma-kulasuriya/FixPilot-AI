@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 from database import Base
 
 class TicketDB(Base):
@@ -17,3 +17,4 @@ class UserDB(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True)
     password = Column(String)
+    is_admin = Column(Boolean, default=False)
