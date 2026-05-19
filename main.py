@@ -78,7 +78,11 @@ def predict(ticket: Ticket, user=Depends(get_current_user)):
 def get_tickets(user=Depends(get_current_user)):
 
     db = SessionLocal()
-    tickets = db.query(TicketDB).filter(TicketDB.owner == user).all()
+
+    tickets = db.query(TicketDB).filter(
+        TicketDB.owner == user
+    ).all()
+
     db.close()
 
     return tickets
@@ -138,3 +142,30 @@ def delete_ticket(ticket_id: int, user=Depends(get_current_user)):
     db.close()
 
     return {"message": "Deleted"}
+
+@app.put("/ticket/{ticket_id}")
+def update_ticket(ticket_id: int, updated_ticket: Ticket, user=Depends(get_current_user)):
+
+    db = SessionLocal()
+
+    ticket = db.query(TicketDB).filter(
+        TicketDB.id == ticket_id,
+        TicketDB.owner == user
+    ).first()
+
+    if not ticket:
+        db.close()
+        return {"error": "Ticket not found"}
+
+    # AI re-predict when issue changes
+    X = vectorizer.transform([updated_ticket.issue])
+
+    ticket.issue = updated_ticket.issue
+    ticket.category = category_model.predict(X)[0]
+    ticket.priority = priority_model.predict(X)[0]
+
+    db.commit()
+    db.refresh(ticket)
+    db.close()
+
+    return ticket
