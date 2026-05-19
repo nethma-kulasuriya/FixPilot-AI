@@ -143,3 +143,31 @@ button:hover {
 .adminPanel h2 {
   margin-bottom: 15px;
 }
+
+.adminPanel {
+  margin-top: 30px;
+  padding: 20px;
+  background: #0f172a;
+  color: white;
+  border-radius: 12px;
+}
+
+/* KPI GRID */
+.statsGrid {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.statCard {
+  flex: 1;
+  background: #1e293b;
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.statCard h3 {
+  font-size: 28px;
+  margin: 0;
+}

@@ -269,3 +269,23 @@ def get_all_tickets(admin=Depends(get_admin_user)):
     db.close()
 
     return tickets
+
+@app.get("/admin/stats")
+def get_stats(admin=Depends(get_admin_user)):
+
+    db = SessionLocal()
+
+    total_users = db.query(UserDB).count()
+    total_tickets = db.query(TicketDB).count()
+
+    high_priority = db.query(TicketDB).filter(
+        TicketDB.priority == "High"
+    ).count()
+
+    db.close()
+
+    return {
+        "users": total_users,
+        "tickets": total_tickets,
+        "high_priority": high_priority
+    }

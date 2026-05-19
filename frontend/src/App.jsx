@@ -20,6 +20,8 @@ function App() {
   const [adminTickets, setAdminTickets] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  const [stats, setStats] = useState(null);
+
   // ---------------- AUTH ----------------
 
   const register = async () => {
@@ -112,13 +114,25 @@ function App() {
     try {
       const usersRes = await api.get("/admin/users");
       const ticketsRes = await api.get("/admin/tickets");
+      const statsRes = await api.get("/admin/stats");
+
 
       setIsAdmin(true);
       setAdminUsers(usersRes.data);
       setAdminTickets(ticketsRes.data);
+      setStats(statsRes.data);
 
     } catch (err) {
       setIsAdmin(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const res = await api.get("/admin/stats");
+      setStats(res.data);
+    } catch (err) {
+      console.log("No admin stats");
     }
   };
 
@@ -242,6 +256,53 @@ function App() {
             <div key={u.id} className="card">
               <p>{u.email}</p>
               <small>Admin: {u.is_admin ? "Yes" : "No"}</small>
+            </div>
+          ))}
+
+          <h3>All Tickets</h3>
+          {adminTickets.map((t) => (
+            <div key={t.id} className="card">
+              <p>{t.issue}</p>
+              <b>{t.category} - {t.priority}</b>
+              <small>{t.owner}</small>
+            </div>
+          ))}
+
+        </div>
+      )}
+
+      {isAdmin && (
+        <div className="adminPanel">
+
+          <h2>👑 Admin Dashboard</h2>
+
+          {/* KPI CARDS */}
+          {stats && (
+            <div className="statsGrid">
+
+              <div className="statCard">
+                <h3>{stats.users}</h3>
+                <p>Total Users</p>
+              </div>
+
+              <div className="statCard">
+                <h3>{stats.tickets}</h3>
+                <p>Total Tickets</p>
+              </div>
+
+              <div className="statCard">
+                <h3>{stats.high_priority}</h3>
+                <p>High Priority</p>
+              </div>
+
+            </div>
+          )}
+
+          <h3>Users</h3>
+          {adminUsers.map((u) => (
+            <div key={u.id} className="card">
+              <p>{u.email}</p>
+              <small>{u.is_admin ? "Admin" : "User"}</small>
             </div>
           ))}
 
