@@ -9,8 +9,23 @@ from models import TicketDB, Base
 from auth import hash_password, verify_password, create_token
 from models import UserDB
 
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPBearer
+from auth import decode_token
+
+
 # 1. Create app FIRST (MOST IMPORTANT)
 app = FastAPI()
+
+security = HTTPBearer()
+
+def get_current_user(token=Depends(security)):
+    data = decode_token(token.credentials)
+
+    if not data:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    return data["email"]
 
 # 2. Add middleware AFTER app is created
 app.add_middleware(
@@ -35,9 +50,7 @@ class Ticket(BaseModel):
 
 # 6. Predict endpoint
 @app.post("/predict")
-def predict(ticket: Ticket):
-
-    owner = "demo-user"  # TEMP (we'll replace later)
+def predict(ticket: Ticket, user=Depends(get_current_user)):
 
     X = vectorizer.transform([ticket.issue])
 
@@ -50,7 +63,7 @@ def predict(ticket: Ticket):
         issue=ticket.issue,
         category=category_prediction,
         priority=priority_prediction,
-        owner=owner
+        owner=user
     )
 
     db.add(new_ticket)
@@ -62,10 +75,10 @@ def predict(ticket: Ticket):
 
 # 7. Get all tickets
 @app.get("/tickets")
-def get_tickets():
+def get_tickets(user=Depends(get_current_user)):
 
     db = SessionLocal()
-    tickets = db.query(TicketDB).filter(TicketDB.owner == "demo-user").all()
+    tickets = db.query(TicketDB).filter(TicketDB.owner == user).all()
     db.close()
 
     return tickets
@@ -87,11 +100,14 @@ def register(email: str, password: str):
 
     return {"message": "User created"}
 
+
 @app.post("/login")
 def login(email: str, password: str):
 
     db = SessionLocal()
+
     user = db.query(UserDB).filter(UserDB.email == email).first()
+
     db.close()
 
     if not user or not verify_password(password, user.password):
@@ -99,4 +115,6 @@ def login(email: str, password: str):
 
     token = create_token({"email": email})
 
-    return {"access_token": token}
+    return {
+        "access_token": token
+    }

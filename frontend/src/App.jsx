@@ -16,21 +16,52 @@ function App() {
   // ---------------- AUTH ----------------
 
   const register = async () => {
-    await api.post("/register", null, {
-      params: { email, password },
-    });
+    try {
 
-    alert("User created! Now login.");
-    setIsLogin(true);
+      const res = await api.post("/register", null, {
+        params: {
+          email,
+          password,
+        },
+      });
+
+      console.log(res.data);
+
+      alert("User created!");
+
+      setIsLogin(true);
+
+    } catch (error) {
+
+      console.error(error);
+
+      if (error.response) {
+        alert(error.response.data.detail || "Register failed");
+      } else {
+        alert("Server error");
+      }
+    }
   };
 
-  const login = async () => {
-    const res = await api.post("/login", null, {
-      params: { email, password },
-    });
 
-    localStorage.setItem("token", res.data.access_token);
-    setToken(res.data.access_token);
+
+  const login = async () => {
+    try {
+      const res = await api.post("/login", null, {
+        params: { email, password },
+      });
+
+      if (res.data.access_token) {
+        localStorage.setItem("token", res.data.access_token);
+        setToken(res.data.access_token);
+      } else {
+        alert("Login failed");
+      }
+
+    } catch (error) {
+      console.error(error);
+      alert("Login error");
+    }
   };
 
   const logout = () => {
