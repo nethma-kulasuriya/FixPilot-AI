@@ -123,3 +123,11 @@ button:hover {
 .filterBar input {
   flex: 1;
 }
+
+button {
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.8;
+}

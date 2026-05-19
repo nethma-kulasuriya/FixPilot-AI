@@ -17,22 +17,15 @@ function App() {
 
   const register = async () => {
     try {
-
       const res = await api.post("/register", null, {
-        params: {
-          email,
-          password,
-        },
+        params: { email, password },
       });
 
       console.log(res.data);
-
       alert("User created!");
-
       setIsLogin(true);
 
     } catch (error) {
-
       console.error(error);
 
       if (error.response) {
@@ -42,8 +35,6 @@ function App() {
       }
     }
   };
-
-
 
   const login = async () => {
     try {
@@ -72,17 +63,18 @@ function App() {
   // ---------------- AI ----------------
 
   const analyzeIssue = async () => {
-    await api.post("/predict", {
-      issue,
-    });
-
+    await api.post("/predict", { issue });
     setIssue("");
     fetchTickets();
   };
 
   const fetchTickets = async () => {
-    const res = await api.get("/tickets");
-    setTickets(res.data);
+    try {
+      const res = await api.get("/tickets");
+      setTickets(res.data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   useEffect(() => {
@@ -150,11 +142,37 @@ function App() {
       <div className="grid">
         {tickets.map((t) => (
           <div key={t.id} className="card">
+
             <p>{t.issue}</p>
             <b>{t.category} - {t.priority}</b>
+
+            {/* ✅ NEW DELETE BUTTON */}
+            <button
+              style={{
+                marginTop: "10px",
+                background: "red",
+                color: "white",
+                border: "none",
+                padding: "5px 10px",
+                cursor: "pointer"
+              }}
+              onClick={async () => {
+                try {
+                  await api.delete(`/ticket/${t.id}`);
+                  fetchTickets(); // refresh UI instantly
+                } catch (err) {
+                  console.error(err);
+                  alert("Delete failed");
+                }
+              }}
+            >
+              Delete
+            </button>
+
           </div>
         ))}
       </div>
+
     </div>
   );
 }

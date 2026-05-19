@@ -118,3 +118,23 @@ def login(email: str, password: str):
     return {
         "access_token": token
     }
+
+@app.delete("/ticket/{ticket_id}")
+def delete_ticket(ticket_id: int, user=Depends(get_current_user)):
+
+    db = SessionLocal()
+
+    ticket = db.query(TicketDB).filter(
+        TicketDB.id == ticket_id,
+        TicketDB.owner == user
+    ).first()
+
+    if not ticket:
+        db.close()
+        return {"error": "Ticket not found"}
+
+    db.delete(ticket)
+    db.commit()
+    db.close()
+
+    return {"message": "Deleted"}
