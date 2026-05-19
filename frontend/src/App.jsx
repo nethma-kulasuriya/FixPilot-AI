@@ -1,6 +1,18 @@
+
 import { useState, useEffect } from "react";
 import api from "./api";
 import "./App.css";
+
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer
+} from "recharts";
+
+import { FiEdit3, FiTrash2 } from "react-icons/fi";
 
 function App() {
   const [email, setEmail] = useState("");
@@ -12,14 +24,19 @@ function App() {
   const [tickets, setTickets] = useState([]);
   const [isLogin, setIsLogin] = useState(true);
 
-  const [editingTicket, setEditingTicket] = useState(null);
-  const [editText, setEditText] = useState("");
-
-  // ADMIN STATE
   const [adminUsers, setAdminUsers] = useState([]);
   const [adminTickets, setAdminTickets] = useState([]);
   const [stats, setStats] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  const [activePage, setActivePage] = useState("dashboard");
+
+  const [hoveredTicket, setHoveredTicket] = useState(null);
+  const [hoveredAdminTicket, setHoveredAdminTicket] = useState(null);
+
+  // State variables for managing inline ticket editing
+  const [editingTicket, setEditingTicket] = useState(null);
+  const [editText, setEditText] = useState("");
 
   // ---------------- AUTH ----------------
 
@@ -33,7 +50,6 @@ function App() {
       setIsLogin(true);
 
     } catch (error) {
-      console.error(error);
       alert(error.response?.data?.detail || "Register failed");
     }
   };
@@ -52,8 +68,7 @@ function App() {
       localStorage.setItem("token", res.data.access_token);
       setToken(res.data.access_token);
 
-    } catch (error) {
-      console.error(error);
+    } catch {
       alert("Login failed");
     }
   };
@@ -69,14 +84,13 @@ function App() {
     setStats(null);
   };
 
-  // ---------------- USER API ----------------
+  // ---------------- USER ----------------
 
   const fetchTickets = async () => {
     try {
       const res = await api.get("/tickets");
       setTickets(res.data);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setTickets([]);
     }
   };
@@ -90,13 +104,18 @@ function App() {
       setIssue("");
       fetchTickets();
 
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("AI prediction failed");
     }
   };
 
-  const updateTicket = async (id) => {
+  const deleteTicket = async (id) => {
+    await api.delete(`/ticket/${id}`);
+    fetchTickets();
+  };
+
+  // Fixed and moved outside the unreachable login check block
+  const saveEdit = async (id) => {
     try {
       await api.put(`/ticket/${id}`, {
         issue: editText,
@@ -104,15 +123,17 @@ function App() {
 
       setEditingTicket(null);
       setEditText("");
+
       fetchTickets();
+      fetchAdminData();
 
     } catch (err) {
       console.error(err);
-      alert("Update failed");
+      alert("Failed to update ticket");
     }
   };
 
-  // ---------------- ADMIN API ----------------
+  // ---------------- ADMIN ----------------
 
   const fetchAdminData = async () => {
     try {
@@ -121,11 +142,11 @@ function App() {
       const statsRes = await api.get("/admin/stats");
 
       setIsAdmin(true);
-      setAdminUsers(usersRes.data);
-      setAdminTickets(ticketsRes.data);
-      setStats(statsRes.data);
+      setAdminUsers(usersRes.data || []);
+      setAdminTickets(ticketsRes.data || []);
+      setStats(statsRes.data || null);
 
-    } catch (err) {
+    } catch {
       setIsAdmin(false);
     }
   };
@@ -139,7 +160,15 @@ function App() {
     }
   }, [token]);
 
-  // ---------------- LOGIN UI ----------------
+  // ---------------- CHART DATA ----------------
+
+  const chartData = [
+    { name: "Users", value: adminUsers?.length || 0 },
+    { name: "Tickets", value: tickets?.length || 0 },
+    { name: "High Priority", value: stats?.high_priority || 0 }
+  ];
+
+  // ---------------- LOGIN PAGE ----------------
 
   if (!token) {
     return (
@@ -176,120 +205,245 @@ function App() {
     );
   }
 
-  // ---------------- DASHBOARD UI ----------------
+  // ---------------- MAIN UI ----------------
 
   return (
-    <div className="container">
+    <div className="layout">
 
-      <h1>FixPilot AI Dashboard</h1>
+      {/* SIDEBAR */}
+      <div className="sidebar">
 
-      <button onClick={logout}>Logout</button>
+        <h2>FixPilot AI</h2>
 
-      {/* USER INPUT */}
-      <div className="inputCard">
-        <textarea
-          placeholder="Describe issue..."
-          value={issue}
-          onChange={(e) => setIssue(e.target.value)}
-        />
+        <button onClick={() => setActivePage("dashboard")}>
+          Dashboard
+        </button>
 
-        <button onClick={analyzeIssue}>Analyze</button>
+        <button onClick={() => setActivePage("tickets")}>
+          Tickets
+        </button>
+
+        <button
+          onClick={() => setActivePage("admin")}
+          disabled={!isAdmin}
+        >
+          Admin
+        </button>
+
+        <button onClick={logout}>
+          Logout
+        </button>
+
       </div>
 
-      {/* USER TICKETS */}
-      <h2>Your Tickets</h2>
+      {/* MAIN CONTENT */}
+      <div className="main">
 
-      <div className="grid">
-        {tickets.map((t) => (
-          <div key={t.id} className="card">
+        {/* DASHBOARD */}
+        {activePage === "dashboard" && (
+          <div>
 
-            <p>{t.issue}</p>
-            <b>{t.category} - {t.priority}</b>
+            <h1>Dashboard</h1>
 
-            {editingTicket === t.id ? (
-              <>
-                <textarea
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                />
-                <button onClick={() => updateTicket(t.id)}>Save</button>
-                <button onClick={() => setEditingTicket(null)}>Cancel</button>
-              </>
-            ) : (
-              <button
-                onClick={() => {
-                  setEditingTicket(t.id);
-                  setEditText(t.issue);
-                }}
-              >
-                Edit
-              </button>
-            )}
-
-            <button
-              style={{ marginLeft: "10px", background: "red", color: "white" }}
-              onClick={async () => {
-                await api.delete(`/ticket/${t.id}`);
-                fetchTickets();
-              }}
-            >
-              Delete
-            </button>
+            <div style={{ width: "100%", height: 300 }}>
+              <ResponsiveContainer>
+                <BarChart data={chartData}>
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#4f46e5" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
 
           </div>
-        ))}
+        )}
+
+        {/* TICKETS */}
+        {activePage === "tickets" && (
+          <div>
+
+            <h1>Your Tickets</h1>
+
+            <div className="inputCard">
+              <textarea
+                value={issue}
+                onChange={(e) => setIssue(e.target.value)}
+                placeholder="Describe issue..."
+              />
+
+              <button onClick={analyzeIssue}>
+                Analyze
+              </button>
+            </div>
+
+            <div className="grid">
+
+              {tickets.map((t) => (
+                <div
+                  key={t.id}
+                  className="card"
+                  onMouseEnter={() => setHoveredTicket(t.id)}
+                  onMouseLeave={() => setHoveredTicket(null)}
+                >
+
+                  {editingTicket === t.id ? (
+                    <div className="editContainer">
+                      <textarea
+                        className="editInput"
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        style={{ width: "100%", minHeight: "60px", marginBottom: "8px" }}
+                      />
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button onClick={() => saveEdit(t.id)} className="saveBtn">
+                          Save
+                        </button>
+                        <button onClick={() => setEditingTicket(null)} className="cancelBtn">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="ticket-issue">
+                        {t.issue}
+                      </p>
+
+                      <b className="ticket-meta">
+                        {t.category} - {t.priority}
+                      </b>
+
+                      <div className={`iconRow ${hoveredTicket === t.id ? "show" : ""}`}>
+
+                        <button
+                          className="iconBtn"
+                          onClick={() => {
+                            setEditingTicket(t.id);
+                            setEditText(t.issue);
+                          }}
+                        >
+                          <FiEdit3 />
+                        </button>
+
+                        <button
+                          className="iconBtn danger"
+                          onClick={() => deleteTicket(t.id)}
+                        >
+                          <FiTrash2 />
+                        </button>
+
+                      </div>
+                    </>
+                  )}
+
+                </div>
+              ))}
+
+            </div>
+
+          </div>
+        )}
+
+        {/* ADMIN */}
+        {activePage === "admin" && isAdmin && (
+          <div>
+
+            <h1 className="pageTitle">
+              Admin Panel
+            </h1>
+
+            {/* USERS */}
+            <h3 className="sectionLabel">
+              Users
+            </h3>
+
+            <div className="usersTable">
+
+              <div className="usersHeader">
+                <span>User</span>
+                <span>Role</span>
+                <span>Status</span>
+              </div>
+
+              {adminUsers.map((u) => (
+                <div key={u.id} className="userRow">
+
+                  <div className="userInfo">
+
+                    <div className="avatar">
+                      {u.email.charAt(0).toUpperCase()}
+                    </div>
+
+                    <div className="userText">
+
+                      <p className="userEmail">
+                        {u.email}
+                      </p>
+
+                      <small className="userSubText">
+                        Active account
+                      </small>
+
+                    </div>
+
+                  </div>
+
+                  <div>
+                    <span className={u.is_admin ? "roleAdmin" : "roleUser"}>
+                      {u.is_admin ? "Admin" : "User"}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="statusBadge">
+                      Online
+                    </span>
+                  </div>
+
+                </div>
+              ))}
+
+            </div>
+
+            {/* TICKETS */}
+            <h3 className="sectionLabel ticketsLabel">
+              Tickets
+            </h3>
+
+            <div className="grid">
+
+              {adminTickets.map((t) => (
+                <div
+                  key={t.id}
+                  className="card adminCard"
+                  onMouseEnter={() => setHoveredAdminTicket(t.id)}
+                  onMouseLeave={() => setHoveredAdminTicket(null)}
+                >
+
+                  <p className="ticket-issue">
+                    {t.issue}
+                  </p>
+
+                  <b className="ticket-meta">
+                    {t.category} - {t.priority}
+                  </b>
+
+                  {hoveredAdminTicket === t.id && (
+                    <div className="adminEmail">
+                      {t.owner}
+                    </div>
+                  )}
+
+                </div>
+              ))}
+
+            </div>
+
+          </div>
+        )}
+
       </div>
-
-      {/* ADMIN DASHBOARD */}
-      {isAdmin && (
-        <div className="adminPanel">
-
-          <h2>👑 Admin Dashboard</h2>
-
-          {/* STATS */}
-          {stats && (
-            <div className="statsGrid">
-
-              <div className="statCard">
-                <h3>{stats.users}</h3>
-                <p>Total Users</p>
-              </div>
-
-              <div className="statCard">
-                <h3>{stats.tickets}</h3>
-                <p>Total Tickets</p>
-              </div>
-
-              <div className="statCard">
-                <h3>{stats.high_priority}</h3>
-                <p>High Priority</p>
-              </div>
-
-            </div>
-          )}
-
-          {/* USERS */}
-          <h3>Users</h3>
-          {adminUsers.map((u) => (
-            <div key={u.id} className="card">
-              <p>{u.email}</p>
-              <small>{u.is_admin ? "Admin" : "User"}</small>
-            </div>
-          ))}
-
-          {/* TICKETS */}
-          <h3>All Tickets</h3>
-          {adminTickets.map((t) => (
-            <div key={t.id} className="card">
-              <p>{t.issue}</p>
-              <b>{t.category} - {t.priority}</b>
-              <small>{t.owner}</small>
-            </div>
-          ))}
-
-        </div>
-      )}
-
     </div>
   );
 }
