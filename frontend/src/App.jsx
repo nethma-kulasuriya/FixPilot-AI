@@ -13,6 +13,7 @@ import {
 } from "recharts";
 
 import { FiEdit3, FiTrash2 } from "react-icons/fi";
+import Landing from "./Landing";
 
 function App() {
   const [email, setEmail] = useState("");
@@ -23,6 +24,7 @@ function App() {
 
   const [tickets, setTickets] = useState([]);
   const [isLogin, setIsLogin] = useState(true);
+  const [showAuth, setShowAuth] = useState(false);
 
   const [adminUsers, setAdminUsers] = useState([]);
   const [adminTickets, setAdminTickets] = useState([]);
@@ -171,41 +173,59 @@ function App() {
   // ---------------- LOGIN PAGE ----------------
 
   if (!token) {
+    if (!showAuth) {
+      return <Landing onLoginClick={() => setShowAuth(true)} />;
+    }
+
     return (
-      <div className="container">
-        <h1>FixPilot AI Login</h1>
+      <div className="auth-overlay">
+        <div className="auth-modal glass-card">
+          <button className="auth-close-btn" onClick={() => setShowAuth(false)}>&times;</button>
+          <h2 className="auth-title">Welcome to FixPilot AI</h2>
+          <p className="auth-subtitle">{isLogin ? "Sign in to your account" : "Create a new account"}</p>
 
-        <input
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+          <div className="auth-form">
+            <input
+              className="auth-input"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
 
-        <input
-          placeholder="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+            <input
+              className="auth-input"
+              placeholder="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
 
-        <br />
-
-        {isLogin ? (
-          <>
-            <button onClick={login}>Login</button>
-            <p onClick={() => setIsLogin(false)}>Create account</p>
-          </>
-        ) : (
-          <>
-            <button onClick={register}>Register</button>
-            <p onClick={() => setIsLogin(true)}>Back to login</p>
-          </>
-        )}
+            {isLogin ? (
+              <>
+                <button className="auth-submit-btn" onClick={login}>Sign In</button>
+                <p className="auth-switch-text">
+                  Don't have an account? <span onClick={() => setIsLogin(false)}>Sign up</span>
+                </p>
+              </>
+            ) : (
+              <>
+                <button className="auth-submit-btn" onClick={register}>Create Account</button>
+                <p className="auth-switch-text">
+                  Already have an account? <span onClick={() => setIsLogin(true)}>Sign in</span>
+                </p>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     );
   }
 
   // ---------------- MAIN UI ----------------
+
+  if (activePage === "landing") {
+    return <Landing onLoginClick={() => setActivePage("dashboard")} isAuthenticated={true} />;
+  }
 
   return (
     <div className="layout">
@@ -213,7 +233,7 @@ function App() {
       {/* SIDEBAR */}
       <div className="sidebar">
 
-        <h2>FixPilot AI</h2>
+        <h2 style={{cursor: "pointer"}} onClick={() => setActivePage("landing")}>FixPilot AI</h2>
 
         <button onClick={() => setActivePage("dashboard")}>
           Dashboard
