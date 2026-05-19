@@ -181,7 +181,10 @@ function App() {
       <div className="auth-overlay">
         <div className="auth-modal glass-card">
           <button className="auth-close-btn" onClick={() => setShowAuth(false)}>&times;</button>
-          <h2 className="auth-title">Welcome to FixPilot AI</h2>
+          <div className="auth-logo-container">
+            <img src="/logo.png" alt="FixPilot Logo" className="auth-logo" />
+          </div>
+          <h2 className="auth-title">Welcome to FixPilot-AI</h2>
           <p className="auth-subtitle">{isLogin ? "Sign in to your account" : "Create a new account"}</p>
 
           <div className="auth-form">
@@ -233,7 +236,10 @@ function App() {
       {/* SIDEBAR */}
       <div className="sidebar">
 
-        <h2 style={{cursor: "pointer"}} onClick={() => setActivePage("landing")}>FixPilot AI</h2>
+        <h2 className="sidebar-brand" onClick={() => setActivePage("landing")}>
+          <img src="/logo.png" alt="FixPilot Logo" className="sidebar-logo" />
+          <span>FixPilot-AI</span>
+        </h2>
 
         <button onClick={() => setActivePage("dashboard")}>
           Dashboard

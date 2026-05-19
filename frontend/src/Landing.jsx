@@ -12,8 +12,8 @@ function Landing({ onLoginClick, isAuthenticated = false }) {
       {/* Navbar */}
       <nav className="landing-nav">
         <div className="nav-logo">
-          <div className="logo-icon">FP</div>
-          <span>FixPilot AI</span>
+          <img src="/logo.png" alt="FixPilot AI" className="logo-image" />
+          <span>FixPilot-AI</span>
         </div>
         <button className="nav-signin-btn" onClick={onLoginClick}>
           {isAuthenticated ? "Dashboard" : "Sign In"}
@@ -22,9 +22,12 @@ function Landing({ onLoginClick, isAuthenticated = false }) {
 
       {/* Hero Section */}
       <header className="hero-section">
+        <div className="hero-logo-container">
+          <img src="/logo.png" alt="FixPilot Logo" className="hero-logo" />
+        </div>
         <div className="badge-modern">
           <span className="badge-dot"></span>
-          FixPilot AI 2.0 is now live
+          FixPilot-AI 2.0 is now live
         </div>
         <h1 className="hero-title">
           Intelligent IT Support, <br />

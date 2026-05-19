@@ -180,13 +180,57 @@ button:hover {
 
 /* SIDEBAR */
 .sidebar {
-  width: 220px;
+  width: 240px;
   background: #0f172a;
   color: white;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  margin-bottom: 15px;
+  font-family: 'Inter', Arial, sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.5px;
+  transition: all 0.3s ease;
+}
+
+.sidebar-brand:hover {
+  transform: translateY(-1px);
+}
+
+.sidebar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: contain;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+}
+
+.auth-logo-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.auth-logo {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: contain;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+  background: rgba(30, 41, 59, 0.4);
+  padding: 4px;
 }
 
 .sidebar button {

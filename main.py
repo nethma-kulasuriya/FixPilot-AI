@@ -13,7 +13,7 @@ from auth import (
     verify_password,
     create_token,
     decode_token
-)
+) 
 
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer
@@ -64,7 +64,7 @@ def get_admin_user(user=Depends(get_current_user)):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -174,7 +174,10 @@ def register(email: str, password: str):
 
     if existing_user:
         db.close()
-        return {"error": "User already exists"}
+        raise HTTPException(
+            status_code=400,
+            detail="User already exists"
+        )
 
     user = UserDB(
         email=email,
@@ -204,7 +207,10 @@ def login(email: str, password: str):
     db.close()
 
     if not user or not verify_password(password, user.password):
-        return {"error": "Invalid credentials"}
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials"
+        )
 
     token = create_token({
         "email": email
@@ -229,7 +235,10 @@ def delete_ticket(ticket_id: int, user=Depends(get_current_user)):
 
     if not ticket:
         db.close()
-        return {"error": "Ticket not found"}
+        raise HTTPException(
+            status_code=404,
+            detail="Ticket not found"
+        )
 
     db.delete(ticket)
     db.commit()
@@ -256,7 +265,10 @@ def update_ticket(
 
     if not ticket:
         db.close()
-        return {"error": "Ticket not found"}
+        raise HTTPException(
+            status_code=404,
+            detail="Ticket not found"
+        )
 
     # Re-run AI prediction
     X = vectorizer.transform([updated_ticket.issue])
@@ -318,3 +330,4 @@ def get_stats(admin=Depends(get_admin_user)):
         "tickets": total_tickets,
         "high_priority": high_priority
     }
+
