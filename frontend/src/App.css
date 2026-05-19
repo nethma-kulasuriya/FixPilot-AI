@@ -131,3 +131,15 @@ button {
 button:hover {
   opacity: 0.8;
 }
+
+.adminPanel {
+  margin-top: 30px;
+  padding: 20px;
+  border: 2px solid #ffcc00;
+  border-radius: 10px;
+  background: #0d1136;
+}
+
+.adminPanel h2 {
+  margin-bottom: 15px;
+}

@@ -10,32 +10,30 @@ function App() {
   const [issue, setIssue] = useState("");
 
   const [tickets, setTickets] = useState([]);
-
   const [isLogin, setIsLogin] = useState(true);
 
   const [editingTicket, setEditingTicket] = useState(null);
   const [editText, setEditText] = useState("");
 
+  // 👑 ADMIN STATE
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [adminTickets, setAdminTickets] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+
   // ---------------- AUTH ----------------
 
   const register = async () => {
     try {
-      const res = await api.post("/register", null, {
+      await api.post("/register", null, {
         params: { email, password },
       });
 
-      console.log(res.data);
       alert("User created!");
       setIsLogin(true);
 
     } catch (error) {
       console.error(error);
-
-      if (error.response) {
-        alert(error.response.data.detail || "Register failed");
-      } else {
-        alert("Server error");
-      }
+      alert(error.response?.data?.detail || "Register failed");
     }
   };
 
@@ -45,49 +43,50 @@ function App() {
         params: { email, password },
       });
 
-      console.log("LOGIN RESPONSE:", res.data);
-
       if (!res.data.access_token) {
-        alert("Login failed: No token received");
+        alert("Login failed");
         return;
       }
 
       localStorage.setItem("token", res.data.access_token);
       setToken(res.data.access_token);
 
-      // 🔥 FORCE reload data after login
-      fetchTickets();
-
     } catch (error) {
-      console.error("LOGIN ERROR:", error);
-      alert("Login failed (check backend)");
+      console.error(error);
+      alert("Login failed");
     }
   };
 
   const logout = () => {
     localStorage.removeItem("token");
     setToken(null);
+
+    setTickets([]);
+    setIsAdmin(false);
+    setAdminUsers([]);
+    setAdminTickets([]);
   };
 
-  // ---------------- AI ----------------
-
-  const analyzeIssue = async () => {
-    await api.post("/predict", { issue });
-    setIssue("");
-    fetchTickets();
-  };
+  // ---------------- USER API ----------------
 
   const fetchTickets = async () => {
     try {
       const res = await api.get("/tickets");
-
-      console.log("TICKETS:", res.data);
-
       setTickets(res.data);
-
     } catch (err) {
-      console.error("FETCH TICKETS ERROR:", err);
+      console.error(err);
       setTickets([]);
+    }
+  };
+
+  const analyzeIssue = async () => {
+    try {
+      await api.post("/predict", { issue });
+      setIssue("");
+      fetchTickets();
+    } catch (err) {
+      console.error(err);
+      alert("AI prediction failed");
     }
   };
 
@@ -107,9 +106,28 @@ function App() {
     }
   };
 
+  // ---------------- ADMIN API ----------------
+
+  const fetchAdminData = async () => {
+    try {
+      const usersRes = await api.get("/admin/users");
+      const ticketsRes = await api.get("/admin/tickets");
+
+      setIsAdmin(true);
+      setAdminUsers(usersRes.data);
+      setAdminTickets(ticketsRes.data);
+
+    } catch (err) {
+      setIsAdmin(false);
+    }
+  };
+
+  // ---------------- LOAD DATA ----------------
+
   useEffect(() => {
     if (token) {
       fetchTickets();
+      fetchAdminData();
     }
   }, [token]);
 
@@ -157,6 +175,7 @@ function App() {
 
       <button onClick={logout}>Logout</button>
 
+      {/* ---------------- USER DASHBOARD ---------------- */}
       <div className="inputCard">
         <textarea
           placeholder="Describe issue..."
@@ -176,21 +195,15 @@ function App() {
             <p>{t.issue}</p>
             <b>{t.category} - {t.priority}</b>
 
-            {/* EDIT MODE */}
+            {/* EDIT */}
             {editingTicket === t.id ? (
               <>
                 <textarea
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
                 />
-
-                <button onClick={() => updateTicket(t.id)}>
-                  Save
-                </button>
-
-                <button onClick={() => setEditingTicket(null)}>
-                  Cancel
-                </button>
+                <button onClick={() => updateTicket(t.id)}>Save</button>
+                <button onClick={() => setEditingTicket(null)}>Cancel</button>
               </>
             ) : (
               <button
@@ -217,6 +230,32 @@ function App() {
           </div>
         ))}
       </div>
+
+      {/* ---------------- ADMIN DASHBOARD ---------------- */}
+      {isAdmin && (
+        <div className="adminPanel">
+
+          <h2>👑 Admin Dashboard</h2>
+
+          <h3>Users</h3>
+          {adminUsers.map((u) => (
+            <div key={u.id} className="card">
+              <p>{u.email}</p>
+              <small>Admin: {u.is_admin ? "Yes" : "No"}</small>
+            </div>
+          ))}
+
+          <h3>All Tickets</h3>
+          {adminTickets.map((t) => (
+            <div key={t.id} className="card">
+              <p>{t.issue}</p>
+              <b>{t.category} - {t.priority}</b>
+              <small>{t.owner}</small>
+            </div>
+          ))}
+
+        </div>
+      )}
 
     </div>
   );
