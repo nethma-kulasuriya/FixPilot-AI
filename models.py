@@ -9,6 +9,7 @@ class TicketDB(Base):
     category = Column(String)
     priority = Column(String)
     owner = Column(String)   # NEW: user email
+    suggested_fix = Column(String)
 
 
 class UserDB(Base):

@@ -15,12 +15,11 @@ function App() {
   const [editingTicket, setEditingTicket] = useState(null);
   const [editText, setEditText] = useState("");
 
-  // 👑 ADMIN STATE
+  // ADMIN STATE
   const [adminUsers, setAdminUsers] = useState([]);
   const [adminTickets, setAdminTickets] = useState([]);
-  const [isAdmin, setIsAdmin] = useState(false);
-
   const [stats, setStats] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // ---------------- AUTH ----------------
 
@@ -67,6 +66,7 @@ function App() {
     setIsAdmin(false);
     setAdminUsers([]);
     setAdminTickets([]);
+    setStats(null);
   };
 
   // ---------------- USER API ----------------
@@ -83,9 +83,13 @@ function App() {
 
   const analyzeIssue = async () => {
     try {
-      await api.post("/predict", { issue });
+      const res = await api.post("/predict", { issue });
+
+      alert("AI Suggestion:\n\n" + res.data.suggested_fix);
+
       setIssue("");
       fetchTickets();
+
     } catch (err) {
       console.error(err);
       alert("AI prediction failed");
@@ -116,7 +120,6 @@ function App() {
       const ticketsRes = await api.get("/admin/tickets");
       const statsRes = await api.get("/admin/stats");
 
-
       setIsAdmin(true);
       setAdminUsers(usersRes.data);
       setAdminTickets(ticketsRes.data);
@@ -127,16 +130,7 @@ function App() {
     }
   };
 
-  const fetchStats = async () => {
-    try {
-      const res = await api.get("/admin/stats");
-      setStats(res.data);
-    } catch (err) {
-      console.log("No admin stats");
-    }
-  };
-
-  // ---------------- LOAD DATA ----------------
+  // ---------------- LOAD ----------------
 
   useEffect(() => {
     if (token) {
@@ -145,7 +139,7 @@ function App() {
     }
   }, [token]);
 
-  // ---------------- UI ----------------
+  // ---------------- LOGIN UI ----------------
 
   if (!token) {
     return (
@@ -182,6 +176,8 @@ function App() {
     );
   }
 
+  // ---------------- DASHBOARD UI ----------------
+
   return (
     <div className="container">
 
@@ -189,7 +185,7 @@ function App() {
 
       <button onClick={logout}>Logout</button>
 
-      {/* ---------------- USER DASHBOARD ---------------- */}
+      {/* USER INPUT */}
       <div className="inputCard">
         <textarea
           placeholder="Describe issue..."
@@ -200,6 +196,7 @@ function App() {
         <button onClick={analyzeIssue}>Analyze</button>
       </div>
 
+      {/* USER TICKETS */}
       <h2>Your Tickets</h2>
 
       <div className="grid">
@@ -209,7 +206,6 @@ function App() {
             <p>{t.issue}</p>
             <b>{t.category} - {t.priority}</b>
 
-            {/* EDIT */}
             {editingTicket === t.id ? (
               <>
                 <textarea
@@ -230,7 +226,6 @@ function App() {
               </button>
             )}
 
-            {/* DELETE */}
             <button
               style={{ marginLeft: "10px", background: "red", color: "white" }}
               onClick={async () => {
@@ -245,38 +240,13 @@ function App() {
         ))}
       </div>
 
-      {/* ---------------- ADMIN DASHBOARD ---------------- */}
+      {/* ADMIN DASHBOARD */}
       {isAdmin && (
         <div className="adminPanel">
 
           <h2>👑 Admin Dashboard</h2>
 
-          <h3>Users</h3>
-          {adminUsers.map((u) => (
-            <div key={u.id} className="card">
-              <p>{u.email}</p>
-              <small>Admin: {u.is_admin ? "Yes" : "No"}</small>
-            </div>
-          ))}
-
-          <h3>All Tickets</h3>
-          {adminTickets.map((t) => (
-            <div key={t.id} className="card">
-              <p>{t.issue}</p>
-              <b>{t.category} - {t.priority}</b>
-              <small>{t.owner}</small>
-            </div>
-          ))}
-
-        </div>
-      )}
-
-      {isAdmin && (
-        <div className="adminPanel">
-
-          <h2>👑 Admin Dashboard</h2>
-
-          {/* KPI CARDS */}
+          {/* STATS */}
           {stats && (
             <div className="statsGrid">
 
@@ -298,6 +268,7 @@ function App() {
             </div>
           )}
 
+          {/* USERS */}
           <h3>Users</h3>
           {adminUsers.map((u) => (
             <div key={u.id} className="card">
@@ -306,6 +277,7 @@ function App() {
             </div>
           ))}
 
+          {/* TICKETS */}
           <h3>All Tickets</h3>
           {adminTickets.map((t) => (
             <div key={t.id} className="card">

@@ -99,13 +99,35 @@ def predict(ticket: Ticket, user=Depends(get_current_user)):
     category_prediction = category_model.predict(X)[0]
     priority_prediction = priority_model.predict(X)[0]
 
+    # ---------------- AI "FIX ENGINE" ----------------
+    issue_text = ticket.issue.lower()
+
+    solution = ""
+
+    if "login" in issue_text:
+        solution = "Check authentication flow, JWT token handling, and backend login API response."
+
+    elif "database" in issue_text or "db" in issue_text:
+        solution = "Check DB connection, migrations, and schema mismatch."
+
+    elif "blank" in issue_text or "white screen" in issue_text:
+        solution = "Check frontend rendering errors, console logs, and API response format."
+
+    elif "api" in issue_text:
+        solution = "Verify endpoint URL, request payload, and CORS configuration."
+
+    else:
+        solution = "Analyze logs, reproduce issue, and check recent code changes."
+
+    # ---------------- SAVE TO DB ----------------
     db = SessionLocal()
 
     new_ticket = TicketDB(
         issue=ticket.issue,
         category=category_prediction,
         priority=priority_prediction,
-        owner=user
+        owner=user,
+        suggested_fix=solution
     )
 
     db.add(new_ticket)
@@ -113,7 +135,14 @@ def predict(ticket: Ticket, user=Depends(get_current_user)):
     db.refresh(new_ticket)
     db.close()
 
-    return new_ticket
+    # ---------------- RESPONSE ----------------
+    return {
+        "id": new_ticket.id,
+        "issue": new_ticket.issue,
+        "category": new_ticket.category,
+        "priority": new_ticket.priority,
+        "suggested_fix": new_ticket.suggested_fix
+    }
 
 
 # ---------------- USER TICKETS ----------------
