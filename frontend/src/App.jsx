@@ -21,6 +21,7 @@ function App() {
 
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [issue, setIssue] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [tickets, setTickets] = useState([]);
   const [isLogin, setIsLogin] = useState(true);
@@ -39,6 +40,8 @@ function App() {
   // State variables for managing inline ticket editing
   const [editingTicket, setEditingTicket] = useState(null);
   const [editText, setEditText] = useState("");
+
+
 
   // ---------------- AUTH ----------------
 
@@ -162,8 +165,12 @@ function App() {
     }
   }, [token]);
 
+  const filteredTickets = tickets.filter((t) =>
+    t.issue.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.priority.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   // ---------------- CHART DATA ----------------
-
   const chartData = [
     { name: "Users", value: adminUsers?.length || 0 },
     { name: "Tickets", value: tickets?.length || 0 },
@@ -290,6 +297,14 @@ function App() {
           <div>
 
             <h1>Your Tickets</h1>
+            <div className="searchBar">
+              <input
+                type="text"
+                placeholder="Search tickets..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
 
             <div className="inputCard">
               <textarea
@@ -305,7 +320,7 @@ function App() {
 
             <div className="grid">
 
-              {tickets.map((t) => (
+              {filteredTickets.map((t) => (
                 <div
                   key={t.id}
                   className="card"
