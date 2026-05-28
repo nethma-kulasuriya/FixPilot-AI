@@ -119,6 +119,21 @@ function App() {
     fetchTickets();
   };
 
+  const updateStatus = async (ticketId, newStatus) => {
+    try {
+      await api.put(
+        `/ticket-status/${ticketId}?status=${newStatus}`
+      );
+
+      fetchAdminData();
+      fetchTickets();
+
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update status");
+    }
+  };
+
   // Fixed and moved outside the unreachable login check block
   const saveEdit = async (id) => {
     try {
@@ -147,6 +162,7 @@ function App() {
       const statsRes = await api.get("/admin/stats");
 
       setIsAdmin(true);
+      console.log("ADMIN API SUCCESS ✔");
       setAdminUsers(usersRes.data || []);
       setAdminTickets(ticketsRes.data || []);
       setStats(statsRes.data || null);
@@ -164,6 +180,10 @@ function App() {
       fetchAdminData();
     }
   }, [token]);
+
+  useEffect(() => {
+    console.log("IS ADMIN:", isAdmin);
+  }, [isAdmin]);
 
   const filteredTickets = tickets.filter((t) =>
     t.issue.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -351,9 +371,17 @@ function App() {
                         {t.issue}
                       </p>
 
-                      <b className="ticket-meta">
-                        {t.category} - {t.priority}
-                      </b>
+                      <div className="ticketBottom">
+
+                        <b className="ticket-meta">
+                          {t.category} - {t.priority}
+                        </b>
+
+                        <span className={`statusBadge status-${t.status?.toLowerCase().replace(" ", "")}`}>
+                          {t.status}
+                        </span>
+
+                      </div>
 
                       <div className={`iconRow ${hoveredTicket === t.id ? "show" : ""}`}>
 
@@ -466,9 +494,24 @@ function App() {
                     {t.issue}
                   </p>
 
-                  <b className="ticket-meta">
-                    {t.category} - {t.priority}
-                  </b>
+                  <div className="ticketBottom">
+
+                    <b className="ticket-meta">
+                      {t.category} - {t.priority}
+                    </b>
+
+                    <select
+                      className="statusSelect"
+                      value={t.status || "Open"}
+                      onChange={(e) => updateStatus(t.id, e.target.value)}
+                    >
+                      <option value="Open">Open</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Resolved">Resolved</option>
+                      <option value="Closed">Closed</option>
+                    </select>
+
+                  </div>
 
                   {hoveredAdminTicket === t.id && (
                     <div className="adminEmail">
