@@ -10,6 +10,7 @@ class TicketDB(Base):
     priority = Column(String)
     owner = Column(String)   # NEW: user email
     suggested_fix = Column(String)
+    status = Column(String, default="Open")
 
 
 class UserDB(Base):
@@ -19,3 +20,4 @@ class UserDB(Base):
     email = Column(String, unique=True)
     password = Column(String)
     is_admin = Column(Boolean, default=False)
+

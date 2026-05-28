@@ -1,33 +1,46 @@
 import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
 import joblib
 
-# Load dataset
-data = pd.read_csv("data.csv")
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
 
-# Input text
-X = data["issue"]
+# LOAD DATASET
+df = pd.read_csv("customer_support_tickets.csv")
 
-# Outputs
-y_category = data["category"]
-y_priority = data["priority"]
+# RENAME COLUMNS
+df = df.rename(columns={
+    "Ticket Description": "issue",
+    "Ticket Type": "category",
+    "Ticket Priority": "priority"
+})
 
-# Convert text into numbers
+# REMOVE EMPTY VALUES
+df = df.dropna(subset=["issue", "category", "priority"])
+
+# INPUT TEXT
+X = df["issue"]
+
+# OUTPUT LABELS
+y_category = df["category"]
+y_priority = df["priority"]
+
+# TF-IDF VECTORIZER
 vectorizer = TfidfVectorizer()
+
 X_vectorized = vectorizer.fit_transform(X)
 
-# Train category model
-category_model = LogisticRegression()
+# CATEGORY MODEL
+category_model = LogisticRegression(max_iter=200)
 category_model.fit(X_vectorized, y_category)
 
-# Train priority model
-priority_model = LogisticRegression()
+# PRIORITY MODEL
+priority_model = LogisticRegression(max_iter=200)
 priority_model.fit(X_vectorized, y_priority)
 
-# Save everything
+# SAVE FILES
 joblib.dump(category_model, "category_model.pkl")
 joblib.dump(priority_model, "priority_model.pkl")
 joblib.dump(vectorizer, "vectorizer.pkl")
 
-print("Models trained successfully!")
+print("AI model training complete!")

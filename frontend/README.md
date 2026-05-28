@@ -14,3 +14,19 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+##Commands
+venv\Scripts\activate
+
+After activation you should see something like:
+(venv) D:\My_Projects\FixPilot-AI>
+pip install fastapi uvicorn sqlalchemy joblib python-jose passlib bcrypt scikit-learn
+python -m uvicorn main:app --reload
+pip show sqlalchemy
+
+else
+
+python -m venv venv
+venv\Scripts\activate
+pip install fastapi uvicorn sqlalchemy joblib python-jose passlib bcrypt scikit-learn
+python -m uvicorn main:app --reload
