@@ -197,6 +197,18 @@ function App() {
     { name: "High Priority", value: stats?.high_priority || 0 }
   ];
 
+  const assignEngineer = async (ticketId, engineer) => {
+    try {
+      await api.put(
+        `/ticket-assign/${ticketId}?assigned_to=${engineer}`
+      );
+
+      fetchAdminData();
+    } catch (err) {
+      alert("Assignment failed");
+    }
+  };
+
   // ---------------- LOGIN PAGE ----------------
 
   if (!token) {
@@ -499,6 +511,28 @@ function App() {
                     <b className="ticket-meta">
                       {t.category} - {t.priority}
                     </b>
+
+                    <div className="assignRow">
+
+                      <select
+                        className="assignSelect"
+                        value={t.assigned_to || "Unassigned"}
+                        onChange={(e) =>
+                          assignEngineer(t.id, e.target.value)
+                        }
+                      >
+                        <option value="Unassigned">Unassigned</option>
+                        <option value="John">John</option>
+                        <option value="Sarah">Sarah</option>
+                        <option value="David">David</option>
+                        <option value="Team A">Team A</option>
+                      </select>
+
+                      <span className="assignedLabel">
+                        {t.assigned_to}
+                      </span>
+
+                    </div>
 
                     <select
                       className="statusSelect"

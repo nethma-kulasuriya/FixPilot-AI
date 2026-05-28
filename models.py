@@ -11,6 +11,7 @@ class TicketDB(Base):
     owner = Column(String)   # NEW: user email
     suggested_fix = Column(String)
     status = Column(String, default="Open")
+    assigned_to = Column(String, default="Unassigned")
 
 
 class UserDB(Base):

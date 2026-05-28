@@ -127,7 +127,8 @@ def predict(ticket: Ticket, user=Depends(get_current_user)):
     priority=priority_prediction,
     owner=user,
     status="Open",
-    suggested_fix=suggested_fix
+    suggested_fix=suggested_fix,
+    assigned_to="Unassigned",
 )
 
     db.add(new_ticket)
@@ -297,4 +298,26 @@ def get_stats(admin=Depends(get_admin_user)):
         "high_priority": db.query(TicketDB).filter(
             TicketDB.priority == "High"
         ).count()
+    }
+
+@app.put("/ticket-assign/{ticket_id}")
+def assign_ticket(ticket_id: int, assigned_to: str, admin=Depends(get_admin_user)):
+
+    db = SessionLocal()
+
+    ticket = db.query(TicketDB).filter(TicketDB.id == ticket_id).first()
+
+    if not ticket:
+        db.close()
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    ticket.assigned_to = assigned_to
+
+    db.commit()
+    db.refresh(ticket)
+    db.close()
+
+    return {
+        "message": "Ticket assigned",
+        "assigned_to": ticket.assigned_to
     }

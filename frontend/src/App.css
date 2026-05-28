@@ -740,3 +740,24 @@ button:hover {
   font-size: 12px;
   outline: none;
 }
+
+.assignRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.assignSelect {
+  background: #0f172a;
+  color: white;
+  border: 1px solid #334155;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.assignedLabel {
+  font-size: 12px;
+  color: #94a3b8;
+}
